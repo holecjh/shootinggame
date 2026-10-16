@@ -222,13 +222,14 @@ function show_infobox() {
         canvas.emscripten {
             border: 0px none;
             background-color: transparent;
-            width: 100%;
-            height: 100%;
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain;
+            display: block;
+            margin: auto;
             z-index: 5;
 
             padding: 0;
-            margin: 0 auto;
-
             position: absolute;
             top: 0;
             bottom: 0;
@@ -236,11 +237,13 @@ function show_infobox() {
             right: 0;
         }
 
-        body {
-            font-family: arial;
+        html, body {
             margin: 0;
-            padding: none;
-            background-color:powderblue;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #0f1428;
+            overflow: hidden;
         }
 
         .topright{
@@ -273,6 +276,7 @@ function show_infobox() {
            right: 10px;
            border: 1px solid black;
         }
+        
     </style>
 
     <script>
