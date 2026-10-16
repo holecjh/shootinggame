@@ -21,18 +21,25 @@ async def main():
     YELLOW = (255, 220, 50)
     PURPLE = (180, 100, 255)
     CYAN = (0, 220, 255)
+    BTN_BG = (60, 70, 100)
+    BTN_PRESS = (90, 110, 150)
 
-    # 한글 폰트 로드 (font.ttf 필수)
-    try:
-        font_large = pygame.font.Font("font.ttf", 24)
-        font_medium = pygame.font.Font("font.ttf", 19)
-        font_small = pygame.font.Font("font.ttf", 15)
-        font_title = pygame.font.Font("font.ttf", 38)
-    except:
-        font_large = pygame.font.Font(None, 28)
-        font_medium = pygame.font.Font(None, 22)
+    # --- [한글 폰트 로도 강력한 Fallback 적용] ---
+    font_large, font_medium, font_small, font_title = None, None, None, None
+    for font_name in ["font.ttf", "NanumGothic.ttf", "malgun.ttf", "arial.ttf"]:
+        try:
+            font_large = pygame.font.Font(font_name, 22)
+            font_medium = pygame.font.Font(font_name, 18)
+            font_small = pygame.font.Font(font_name, 14)
+            font_title = pygame.font.Font(font_name, 34)
+            break
+        except:
+            continue
+    if not font_large:
+        font_large = pygame.font.Font(None, 26)
+        font_medium = pygame.font.Font(None, 20)
         font_small = pygame.font.Font(None, 16)
-        font_title = pygame.font.Font(None, 42)
+        font_title = pygame.font.Font(None, 36)
 
     # 총 10개의 핵심 헌법 조문 퀴즈 데이터베이스
     QUESTIONS = [
@@ -123,9 +130,10 @@ async def main():
 
     stars = [Star() for _ in range(60)]
 
-    # 게임 변수 설정 (우주선을 위쪽 안전한 영역에 고정)
+    # 게임 변수 설정 (우주선 상단 영역 고정)
     player_x = SCREEN_WIDTH // 2 - 25
-    player_y = 280  
+    player_y = 260  
+    player_speed = 6
     bullets = []
     enemies = []
     particles = []
@@ -137,9 +145,11 @@ async def main():
     clock = pygame.time.Clock()
     current_q = None
 
-    # [레이아웃 수정] 하단 UI 영역 분리 (설상 상자 왼쪽, FIRE 버튼 오른쪽)
-    desc_box_rect = pygame.Rect(30, 430, 560, 140)
-    rect_fire = pygame.Rect(610, 430, 160, 140)
+    # [하단 UI 영역 배치] 좌측: 이동 버튼 / 중앙: 조문 설명 / 우측: 발사 버튼
+    rect_left = pygame.Rect(20, 430, 75, 140)
+    rect_right = pygame.Rect(100, 430, 75, 140)
+    desc_box_rect = pygame.Rect(185, 430, 415, 140)
+    rect_fire = pygame.Rect(615, 430, 165, 140)
 
     def load_question():
         nonlocal current_q, enemies, q_index
@@ -197,31 +207,46 @@ async def main():
         mouse_pressed = pygame.mouse.get_pressed()
 
         if game_state == "PLAY":
+            moving_left = False
+            moving_right = False
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if rect_fire.collidepoint(event.pos):
-                        # [요청 2] 싱글 레이저 (정중앙에서 1발 발사)
+                        # 싱글 레이저 (정중앙 1발 발사)
                         bullets.append(pygame.Rect(player_x + 23, player_y, 4, 16))
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE:
                         bullets.append(pygame.Rect(player_x + 23, player_y, 4, 16))
+                    elif event.key == pygame.K_LEFT:
+                        moving_left = True
+                    elif event.key == pygame.K_RIGHT:
+                        moving_right = True
 
-            # 터치/마우스 드래그 이동 (하단 UI 영역 침범 불가)
+            # 하단 가상 버튼 터치/클릭 유지 처리 (좌우 이동)
             if mouse_pressed[0]:
-                if not rect_fire.collidepoint(mouse_pos) and mouse_pos[1] < 400:
-                    target_x = mouse_pos[0] - 25
-                    player_x += (target_x - player_x) * 0.25
-                    if player_x < 20: player_x = 20
-                    if player_x > SCREEN_WIDTH - 70: player_x = SCREEN_WIDTH - 70
+                if rect_left.collidepoint(mouse_pos):
+                    moving_left = True
+                elif rect_right.collidepoint(mouse_pos):
+                    moving_right = True
+
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_LEFT]: moving_left = True
+            if keys[pygame.K_RIGHT]: moving_right = True
+
+            if moving_left and player_x > 20:
+                player_x -= player_speed
+            if moving_right and player_x < SCREEN_WIDTH - 70:
+                player_x += player_speed
 
             for bullet in bullets[:]:
                 bullet.y -= 12
                 if bullet.y < 0:
                     bullets.remove(bullet)
 
-            # [요청 3] 느긋한 단어 낙하 속도 (0.7)
+            # 느긋한 단어 낙하 속도 (0.7)
             for enemy in enemies:
                 enemy["y"] += 0.7  
                 enemy["wobble_offset"] += 0.05
@@ -229,8 +254,8 @@ async def main():
                 enemy["rect"].x = enemy["x"]
                 enemy["rect"].y = enemy["y"]
                 
-                # 상단 설명 상자(y=430)에 닿기 전에 처리되도록 설정
-                if enemy["y"] > 370:
+                # 하단 설명 상자(y=430)에 닿기 전에 처리
+                if enemy["y"] > 360:
                     game_history.append({
                         "desc": current_q["desc"],
                         "answer": current_q["answer"],
@@ -284,7 +309,7 @@ async def main():
             info_text = font_medium.render(f"QUESTION: {q_index + 1}/10  |  SCORE: {score}  |  LIFE: {'❤️' * lives}", True, YELLOW)
             screen.blit(info_text, (30, 20))
 
-            # [요청 3] 하단 설명 박스 (우주선과 절대 겹치지 않도록 맨 아래 배치)
+            # 중앙 하단 헌법 조문 설명 박스
             pygame.draw.rect(screen, (25, 35, 60), desc_box_rect, border_radius=12)
             pygame.draw.rect(screen, CYAN, desc_box_rect, 2, border_radius=12)
             
@@ -292,20 +317,20 @@ async def main():
             words = desc_text.split(" ")
             line1, line2, line3 = "", "", ""
             for word in words:
-                if font_large.size(line1 + " " + word)[0] < 520:
+                if font_large.size(line1 + " " + word)[0] < 390:
                     line1 += (" " if line1 else "") + word
-                elif font_large.size(line2 + " " + word)[0] < 520:
+                elif font_large.size(line2 + " " + word)[0] < 390:
                     line2 += (" " if line2 else "") + word
                 else:
                     line3 += (" " if line3 else "") + word
 
-            screen.blit(font_large.render(line1, True, WHITE), (50, 445))
+            screen.blit(font_large.render(line1, True, WHITE), (200, 442))
             if line2:
-                screen.blit(font_large.render(line2, True, WHITE), (50, 480))
+                screen.blit(font_large.render(line2, True, WHITE), (200, 475))
             if line3:
-                screen.blit(font_large.render(line3, True, WHITE), (50, 515))
+                screen.blit(font_large.render(line3, True, WHITE), (200, 508))
 
-            # 우주선 그리기 (상단 영역)
+            # 우주선 그리기
             pygame.draw.polygon(screen, CYAN, [(player_x + 25, player_y), (player_x + 5, player_y + 40), (player_x + 45, player_y + 40)])
             pygame.draw.polygon(screen, BLUE, [(player_x + 5, player_y + 30), (player_x - 5, player_y + 45), (player_x + 10, player_y + 40)])
             pygame.draw.polygon(screen, BLUE, [(player_x + 45, player_y + 30), (player_x + 55, player_y + 45), (player_x + 40, player_y + 40)])
@@ -327,9 +352,22 @@ async def main():
             for p in particles:
                 p.draw(screen)
 
-            # 우측 대형 FIRE 버튼 UI
-            is_fire_pressed = rect_fire.collidepoint(mouse_pos) and mouse_pressed[0]
-            pygame.draw.rect(screen, (220, 60, 60) if is_fire_pressed else (180, 50, 50), rect_fire, border_radius=15)
+            # --- 하단 조작 버튼 UI 렌더링 ---
+            # 1. 왼쪽 이동 버튼 (◀)
+            is_l_pressed = rect_left.collidepoint(mouse_pos) and mouse_pressed[0]
+            pygame.draw.rect(screen, BTN_PRESS if is_l_pressed else BTN_BG, rect_left, border_radius=12)
+            pygame.draw.rect(screen, WHITE, rect_left, 2, border_radius=12)
+            screen.blit(font_title.render("◀", True, WHITE), (rect_left.x + 18, rect_left.y + 45))
+
+            # 2. 오른쪽 이동 버튼 (▶)
+            is_r_pressed = rect_right.collidepoint(mouse_pos) and mouse_pressed[0]
+            pygame.draw.rect(screen, BTN_PRESS if is_r_pressed else BTN_BG, rect_right, border_radius=12)
+            pygame.draw.rect(screen, WHITE, rect_right, 2, border_radius=12)
+            screen.blit(font_title.render("▶", True, WHITE), (rect_right.x + 18, rect_right.y + 45))
+
+            # 3. 우측 FIRE 버튼
+            is_f_pressed = rect_fire.collidepoint(mouse_pos) and mouse_pressed[0]
+            pygame.draw.rect(screen, (220, 60, 60) if is_f_pressed else (180, 50, 50), rect_fire, border_radius=15)
             pygame.draw.rect(screen, YELLOW, rect_fire, 3, border_radius=15)
             txt_f = font_title.render("FIRE 🚀", True, WHITE)
             screen.blit(txt_f, (rect_fire.x + (rect_fire.width - txt_f.get_width()) // 2, rect_fire.y + (rect_fire.height - txt_f.get_height()) // 2 - 5))
