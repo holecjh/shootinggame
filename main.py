@@ -21,21 +21,20 @@ async def main():
     YELLOW = (255, 220, 50)
     PURPLE = (180, 100, 255)
     CYAN = (0, 220, 255)
-    GRAY = (100, 110, 130)
 
-    # 한글 폰트 로드 (font.ttf 없으면 기본 폰트)
+    # 한글 폰트 로드 (font.ttf 필수)
     try:
-        font_large = pygame.font.Font("font.ttf", 26)
-        font_medium = pygame.font.Font("font.ttf", 20)
-        font_small = pygame.font.Font("font.ttf", 16)
-        font_title = pygame.font.Font("font.ttf", 40)
+        font_large = pygame.font.Font("font.ttf", 24)
+        font_medium = pygame.font.Font("font.ttf", 19)
+        font_small = pygame.font.Font("font.ttf", 15)
+        font_title = pygame.font.Font("font.ttf", 38)
     except:
-        font_large = pygame.font.Font(None, 30)
-        font_medium = pygame.font.Font(None, 24)
-        font_small = pygame.font.Font(None, 18)
-        font_title = pygame.font.Font(None, 44)
+        font_large = pygame.font.Font(None, 28)
+        font_medium = pygame.font.Font(None, 22)
+        font_small = pygame.font.Font(None, 16)
+        font_title = pygame.font.Font(None, 42)
 
-    # --- [요청 4] 총 10개의 핵심 헌법 조문 퀴즈 데이터베이스 ---
+    # 총 10개의 핵심 헌법 조문 퀴즈 데이터베이스
     QUESTIONS = [
         {
             "desc": "모든 국민은 인간으로서의 존엄과 가치를 가지며, 행복을 추구할 권리를 가진다.",
@@ -89,7 +88,6 @@ async def main():
         }
     ]
 
-    # 파티클 클래스
     class Particle:
         def __init__(self, x, y):
             self.x = x
@@ -107,7 +105,6 @@ async def main():
         def draw(self, surface):
             pygame.draw.circle(surface, self.color, (int(self.x), int(self.y)), 4)
 
-    # 배경 별 효과
     class Star:
         def __init__(self):
             self.x = random.randint(0, SCREEN_WIDTH)
@@ -126,27 +123,28 @@ async def main():
 
     stars = [Star() for _ in range(60)]
 
-    # 게임 변수 설정
+    # 게임 변수 설정 (우주선을 위쪽 안전한 영역에 고정)
     player_x = SCREEN_WIDTH // 2 - 25
-    player_y = SCREEN_HEIGHT - 220  # 우주선 위치 상향 조정
+    player_y = 280  
     bullets = []
     enemies = []
     particles = []
 
     score = 0
     lives = 3
-    q_index = 0  # 현재 문제 번호 (0부터 9까지 총 10문제)
-    game_history = []  # [요청 5] 결과 리포트용 기록 저장소
+    q_index = 0
+    game_history = []
     clock = pygame.time.Clock()
     current_q = None
 
-    # [요청 1] 하단 발사 버튼만 유지 (좌우 이동 버튼 제거)
-    rect_fire = pygame.Rect(SCREEN_WIDTH - 140, SCREEN_HEIGHT - 90, 110, 70)
+    # [레이아웃 수정] 하단 UI 영역 분리 (설상 상자 왼쪽, FIRE 버튼 오른쪽)
+    desc_box_rect = pygame.Rect(30, 430, 560, 140)
+    rect_fire = pygame.Rect(610, 430, 160, 140)
 
     def load_question():
         nonlocal current_q, enemies, q_index
         if q_index >= len(QUESTIONS):
-            return False  # 10문제 모두 종료
+            return False
         
         current_q = QUESTIONS[q_index]
         enemies = []
@@ -156,7 +154,7 @@ async def main():
         
         for i, opt in enumerate(options):
             ex = 150 + i * 220
-            ey = -50
+            ey = -40
             enemies.append({
                 "text": opt,
                 "x": ex,
@@ -168,7 +166,7 @@ async def main():
             })
         return True
 
-    # 게임 시작 전 3초 카운트다운
+    # 3초 카운트다운
     for count in [3, 2, 1]:
         start_tick = pygame.time.get_ticks()
         while pygame.time.get_ticks() - start_tick < 1000:
@@ -185,7 +183,6 @@ async def main():
     if not load_question():
         return
 
-    # 메인 게임 루프 상태
     game_state = "PLAY"
     running = True
 
@@ -200,34 +197,31 @@ async def main():
         mouse_pressed = pygame.mouse.get_pressed()
 
         if game_state == "PLAY":
-            # 이벤트 처리
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if rect_fire.collidepoint(event.pos):
-                        bullets.append(pygame.Rect(player_x + 10, player_y, 4, 15))
-                        bullets.append(pygame.Rect(player_x + 36, player_y, 4, 15))
+                        # [요청 2] 싱글 레이저 (정중앙에서 1발 발사)
+                        bullets.append(pygame.Rect(player_x + 23, player_y, 4, 16))
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE:
-                        bullets.append(pygame.Rect(player_x + 10, player_y, 4, 15))
-                        bullets.append(pygame.Rect(player_x + 36, player_y, 4, 15))
+                        bullets.append(pygame.Rect(player_x + 23, player_y, 4, 16))
 
-            # [요청 1] 화면 터치/마우스 드래그로 우주선 이동 (발사 버튼 영역 제외)
+            # 터치/마우스 드래그 이동 (하단 UI 영역 침범 불가)
             if mouse_pressed[0]:
-                if not rect_fire.collidepoint(mouse_pos):
+                if not rect_fire.collidepoint(mouse_pos) and mouse_pos[1] < 400:
                     target_x = mouse_pos[0] - 25
-                    player_x += (target_x - player_x) * 0.25  # 부드러운 추종 이동
+                    player_x += (target_x - player_x) * 0.25
                     if player_x < 20: player_x = 20
                     if player_x > SCREEN_WIDTH - 70: player_x = SCREEN_WIDTH - 70
 
-            # 총알 업데이트
             for bullet in bullets[:]:
                 bullet.y -= 12
                 if bullet.y < 0:
                     bullets.remove(bullet)
 
-            # [요청 3] 적(보기) 낙하 속도를 더 느리게 조정 (1.2 -> 0.7)
+            # [요청 3] 느긋한 단어 낙하 속도 (0.7)
             for enemy in enemies:
                 enemy["y"] += 0.7  
                 enemy["wobble_offset"] += 0.05
@@ -235,12 +229,12 @@ async def main():
                 enemy["rect"].x = enemy["x"]
                 enemy["rect"].y = enemy["y"]
                 
-                # 바닥에 닿으면 오답 처리 후 다음 문제
-                if enemy["y"] > SCREEN_HEIGHT - 130:
+                # 상단 설명 상자(y=430)에 닿기 전에 처리되도록 설정
+                if enemy["y"] > 370:
                     game_history.append({
                         "desc": current_q["desc"],
                         "answer": current_q["answer"],
-                        "user": "시간 초과 (놓침)",
+                        "user": "시간 초과",
                         "correct": False
                     })
                     q_index += 1
@@ -249,8 +243,7 @@ async def main():
                         game_state = "RESULT"
                     break
 
-            # 충돌 검사
-            hit_result = None  # "CORRECT", "WRONG"
+            hit_result = None
             for bullet in bullets[:]:
                 for enemy in enemies:
                     if bullet.colliderect(enemy["rect"]):
@@ -291,27 +284,28 @@ async def main():
             info_text = font_medium.render(f"QUESTION: {q_index + 1}/10  |  SCORE: {score}  |  LIFE: {'❤️' * lives}", True, YELLOW)
             screen.blit(info_text, (30, 20))
 
-            # [요청 2] 문장 상자: 우주선 아래쪽에 배치 및 폰트 확대
-            desc_box_rect = pygame.Rect(30, 410, SCREEN_WIDTH - 60, 85)
+            # [요청 3] 하단 설명 박스 (우주선과 절대 겹치지 않도록 맨 아래 배치)
             pygame.draw.rect(screen, (25, 35, 60), desc_box_rect, border_radius=12)
             pygame.draw.rect(screen, CYAN, desc_box_rect, 2, border_radius=12)
             
             desc_text = current_q["desc"]
             words = desc_text.split(" ")
-            line1, line2 = "", ""
+            line1, line2, line3 = "", "", ""
             for word in words:
-                if font_large.size(line1 + " " + word)[0] < SCREEN_WIDTH - 90:
+                if font_large.size(line1 + " " + word)[0] < 520:
                     line1 += (" " if line1 else "") + word
-                else:
+                elif font_large.size(line2 + " " + word)[0] < 520:
                     line2 += (" " if line2 else "") + word
+                else:
+                    line3 += (" " if line3 else "") + word
 
-            t1 = font_large.render(line1, True, WHITE)
-            t2 = font_large.render(line2 if line2 else "", True, WHITE)
-            screen.blit(t1, (50, 422))
+            screen.blit(font_large.render(line1, True, WHITE), (50, 445))
             if line2:
-                screen.blit(t2, (50, 452))
+                screen.blit(font_large.render(line2, True, WHITE), (50, 480))
+            if line3:
+                screen.blit(font_large.render(line3, True, WHITE), (50, 515))
 
-            # 우주선 그리기
+            # 우주선 그리기 (상단 영역)
             pygame.draw.polygon(screen, CYAN, [(player_x + 25, player_y), (player_x + 5, player_y + 40), (player_x + 45, player_y + 40)])
             pygame.draw.polygon(screen, BLUE, [(player_x + 5, player_y + 30), (player_x - 5, player_y + 45), (player_x + 10, player_y + 40)])
             pygame.draw.polygon(screen, BLUE, [(player_x + 45, player_y + 30), (player_x + 55, player_y + 45), (player_x + 40, player_y + 40)])
@@ -333,22 +327,21 @@ async def main():
             for p in particles:
                 p.draw(screen)
 
-            # 터치 발사 버튼 UI
-            pygame.draw.rect(screen, (220, 60, 60) if rect_fire.collidepoint(mouse_pos) and mouse_pressed[0] else (180, 50, 50), rect_fire, border_radius=15)
-            pygame.draw.rect(screen, YELLOW, rect_fire, 2, border_radius=15)
-            txt_f = font_medium.render("FIRE 🚀", True, WHITE)
-            screen.blit(txt_f, (rect_fire.x + (rect_fire.width - txt_f.get_width()) // 2, rect_fire.y + (rect_fire.height - txt_f.get_height()) // 2))
+            # 우측 대형 FIRE 버튼 UI
+            is_fire_pressed = rect_fire.collidepoint(mouse_pos) and mouse_pressed[0]
+            pygame.draw.rect(screen, (220, 60, 60) if is_fire_pressed else (180, 50, 50), rect_fire, border_radius=15)
+            pygame.draw.rect(screen, YELLOW, rect_fire, 3, border_radius=15)
+            txt_f = font_title.render("FIRE 🚀", True, WHITE)
+            screen.blit(txt_f, (rect_fire.x + (rect_fire.width - txt_f.get_width()) // 2, rect_fire.y + (rect_fire.height - txt_f.get_height()) // 2 - 5))
 
         elif game_state == "RESULT":
-            # [요청 5] 결과 리포트 화면 (스코어 및 문제별 정오답 내역 출력)
             screen.fill(NAVY)
             
-            title_txt = font_title.render(f"QUIZ RESULT - TOTAL SCORE: {score}", True, YELLOW)
+            title_txt = font_title.render(f"QUIZ RESULT - SCORE: {score}", True, YELLOW)
             screen.blit(title_txt, (SCREEN_WIDTH // 2 - title_txt.get_width() // 2, 25))
 
-            # 결과 리스트 출력
             y_offset = 80
-            for idx, h in enumerate(game_history[:8]):  # 한 화면에 보기 좋게 최대 8개 표시
+            for idx, h in enumerate(game_history[:8]):
                 status_str = "O" if h["correct"] else "X"
                 status_color = GREEN if h["correct"] else RED
                 
