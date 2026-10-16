@@ -25,10 +25,15 @@ async def main():
     BTN_BG = (70, 80, 110)
     BTN_PRESS = (100, 120, 160)
 
-    # 웹에서 100% 안전한 기본 폰트 사용 (한글 깨짐 방지)
-    font_large = pygame.font.Font(None, 32)
-    font_medium = pygame.font.Font(None, 24)
-    font_title = pygame.font.Font(None, 48)
+    # --- [한글 폰트 로드] 폴더에 넣은 font.ttf 로드 (없으면 기본 폰트 fallback) ---
+    try:
+        font_large = pygame.font.Font("font.ttf", 28)
+        font_medium = pygame.font.Font("font.ttf", 20)
+        font_title = pygame.font.Font("font.ttf", 44)
+    except:
+        font_large = pygame.font.Font(None, 32)
+        font_medium = pygame.font.Font(None, 24)
+        font_title = pygame.font.Font(None, 48)
 
     # 고1 수준 핵심 헌법 조문 퀴즈 데이터베이스
     QUESTIONS = [
@@ -126,18 +131,17 @@ async def main():
         for i, opt in enumerate(options):
             ex = 150 + i * 220
             ey = -60
-            # 단어가 콕콕 박히는 통일된 애니메이션을 위해 초기 오프셋/스케일 부여
             enemies.append({
                 "text": opt,
                 "x": ex,
                 "y": ey,
                 "base_x": ex,
-                "wobble_offset": random.uniform(0, 100), # 둥실둥실 액션용
+                "wobble_offset": random.uniform(0, 100),
                 "rect": pygame.Rect(ex, ey, 140, 55),
                 "is_correct": (opt == current_q["answer"])
             })
 
-    # --- [요청 4] 게임 시작 전 3 -> 2 -> 1 카운트다운 ---
+    # 게임 시작 전 3 -> 2 -> 1 카운트다운
     for count in [3, 2, 1]:
         start_tick = pygame.time.get_ticks()
         while pygame.time.get_ticks() - start_tick < 1000:
@@ -154,12 +158,11 @@ async def main():
 
     load_new_question()
 
-    # 메인 게임 루프 (2분 내외)
+    # 메인 게임 루프
     running = True
     while running:
         screen.fill(NAVY)
         
-        # 우주 배경 별 흐름
         for star in stars:
             star.update()
             star.draw(screen)
@@ -170,13 +173,11 @@ async def main():
         moving_left = False
         moving_right = False
         
-        # 1. 이벤트 처리
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if rect_fire.collidepoint(event.pos):
-                    # 갤럭시 전투기 포신에서 나가는 레이저 (더블 레이저 느낌)
                     bullets.append(pygame.Rect(player_x + 10, player_y, 4, 15))
                     bullets.append(pygame.Rect(player_x + 36, player_y, 4, 15))
             elif event.type == pygame.KEYDOWN:
@@ -184,14 +185,12 @@ async def main():
                     bullets.append(pygame.Rect(player_x + 10, player_y, 4, 15))
                     bullets.append(pygame.Rect(player_x + 36, player_y, 4, 15))
 
-        # 하단 버튼 터치/클릭 유지 처리
         if mouse_pressed[0]:
             if rect_left.collidepoint(mouse_pos):
                 moving_left = True
             elif rect_right.collidepoint(mouse_pos):
                 moving_right = True
 
-        # 키보드 입력 병행 처리
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT] or moving_left:
             if player_x > 20:
@@ -200,28 +199,23 @@ async def main():
             if player_x < SCREEN_WIDTH - 70:
                 player_x += player_speed
 
-        # 3. 시간 관리 (120초 타이머)
         if game_time > 0:
             game_time -= 1
         else:
             running = False
 
-        # 4. 총알 업데이트
         for bullet in bullets[:]:
             bullet.y -= 12
             if bullet.y < 0:
                 bullets.remove(bullet)
 
-        # 5. 적(보기) 업데이트 및 이동 + [요청 3] 단어가 콕콕 박히는(통통 튀는) 액션 효과
         for enemy in enemies:
-            enemy["y"] += 1.2  # 하강 속도
-            # 좌우로 톡톡 튀며 내려오는 탄력 있는 움직임 (시각적 액션)
+            enemy["y"] += 1.2  
             enemy["wobble_offset"] += 0.08
             enemy["x"] = enemy["base_x"] + int(math.sin(enemy["wobble_offset"]) * 15)
             enemy["rect"].x = enemy["x"]
             enemy["rect"].y = enemy["y"]
             
-            # 바닥에 닿으면 오답 처리 및 다음 문제로 정상 전환 ([요청 5] 버그 해결)
             if enemy["y"] > SCREEN_HEIGHT - 150:
                 load_new_question()
                 lives -= 1
@@ -229,7 +223,6 @@ async def main():
                     running = False
                 break
 
-        # 6. 충돌 검사 (총알과 적)
         hit_occurred = False
         for bullet in bullets[:]:
             for enemy in enemies:
@@ -251,27 +244,23 @@ async def main():
                 break
         
         if hit_occurred:
-            load_new_question() # 정/오답 판정 시 즉시 다음 문제 세팅
+            load_new_question()
 
-        # 7. 파티클 업데이트
         for p in particles[:]:
             p.update()
             if p.life <= 0:
                 particles.remove(p)
 
         # --- 화면 그리기 ---
-        
-        # 정보 표시 (점수, 남은 시간, 목숨)
         timer_sec = game_time // 60
         info_text = font_medium.render(f"SCORE: {score}  |  TIME: {timer_sec}s  |  LIFE: {'❤️' * lives}", True, YELLOW)
         screen.blit(info_text, (30, 20))
 
-        # --- [요청 2] 문장이 완성되는 부분을 하단(조준선 위쪽)으로 배치 ---
+        # 하단 조문 설명 박스
         desc_box_rect = pygame.Rect(50, 410, SCREEN_WIDTH - 100, 75)
         pygame.draw.rect(screen, (25, 35, 60), desc_box_rect, border_radius=10)
         pygame.draw.rect(screen, CYAN, desc_box_rect, 2, border_radius=10)
         
-        # 헌법 조문 텍스트 렌더링 (간단 줄바꿈 처리)
         desc_text = current_q["desc"]
         words = desc_text.split(" ")
         line1, line2 = "", ""
@@ -287,22 +276,17 @@ async def main():
         if line2:
             screen.blit(t2, (70, 445))
 
-        # --- [요청 1] 갤럭시게임 스타일의 화려하고 멋진 비행기 디자인 ---
-        # 본체 삼각형
+        # 갤럭시 전투기 디자인
         pygame.draw.polygon(screen, CYAN, [(player_x + 25, player_y), (player_x + 5, player_y + 40), (player_x + 45, player_y + 40)])
-        # 날개 및 조종석 포인트
         pygame.draw.polygon(screen, BLUE, [(player_x + 5, player_y + 30), (player_x - 5, player_y + 45), (player_x + 10, player_y + 40)])
         pygame.draw.polygon(screen, BLUE, [(player_x + 45, player_y + 30), (player_x + 55, player_y + 45), (player_x + 40, player_y + 40)])
-        pygame.draw.circle(screen, WHITE, (player_x + 25, player_y + 20), 4) # 조종석 불빛
-        # 엔진 부스터 불꽃 효과
+        pygame.draw.circle(screen, WHITE, (player_x + 25, player_y + 20), 4)
         booster_color = random.choice([RED, YELLOW])
         pygame.draw.polygon(screen, booster_color, [(player_x + 15, player_y + 40), (player_x + 25, player_y + 55), (player_x + 35, player_y + 40)])
 
-        # 총알 그리기 (네온 레이저 스타일)
         for bullet in bullets:
             pygame.draw.rect(screen, CYAN, bullet, border_radius=2)
 
-        # 적(보기) 그리기 + [요청 3] 단어 뱃지 디자인
         for enemy in enemies:
             pygame.draw.rect(screen, (40, 50, 80), enemy["rect"], border_radius=8)
             pygame.draw.rect(screen, PURPLE, enemy["rect"], 2, border_radius=8)
@@ -311,11 +295,10 @@ async def main():
             ty = enemy["y"] + (55 - txt.get_height()) // 2
             screen.blit(txt, (tx, ty))
 
-        # 파티클 그리기
         for p in particles:
             p.draw(screen)
 
-        # --- 터치 컨트롤 UI (하단 가상 버튼) ---
+        # 가상 버튼 UI
         pygame.draw.rect(screen, BTN_PRESS if rect_left.collidepoint(mouse_pos) and mouse_pressed[0] else BTN_BG, rect_left, border_radius=12)
         pygame.draw.rect(screen, WHITE, rect_left, 2, border_radius=12)
         txt_l = font_large.render("◀", True, WHITE)
@@ -335,7 +318,6 @@ async def main():
         await asyncio.sleep(0)
         clock.tick(60)
 
-    # --- 게임 종료 화면 ---
     screen.fill(NAVY)
     game_over_txt = font_title.render(f"GAME OVER! SCORE: {score}", True, YELLOW)
     sub_txt = font_medium.render("새로고침하면 다시 시작합니다.", True, WHITE)
