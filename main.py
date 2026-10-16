@@ -6,6 +6,7 @@ import sys
 async def main():
     pygame.init()
 
+    # 가상 해상도 고정 (800x600 비율 유지하며 모바일 화면에 꽉 참)
     SCREEN_WIDTH = 800
     SCREEN_HEIGHT = 600
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -13,7 +14,6 @@ async def main():
 
     # 색상 정의
     WHITE = (255, 255, 255)
-    BLACK = (20, 20, 20)
     NAVY = (15, 20, 40)
     BLUE = (50, 150, 255)
     RED = (255, 80, 80)
@@ -21,15 +21,15 @@ async def main():
     YELLOW = (255, 220, 50)
     PURPLE = (180, 100, 255)
     CYAN = (0, 220, 255)
-    BTN_BG = (60, 70, 100)
-    BTN_PRESS = (90, 110, 150)
+    BTN_BG = (50, 65, 100)
+    BTN_PRESS = (80, 105, 150)
 
-    # --- [한글 폰트 로도 강력한 Fallback 적용] ---
+    # 한글 폰트 안전 로더
     font_large, font_medium, font_small, font_title = None, None, None, None
     for font_name in ["font.ttf", "NanumGothic.ttf", "malgun.ttf", "arial.ttf"]:
         try:
             font_large = pygame.font.Font(font_name, 22)
-            font_medium = pygame.font.Font(font_name, 18)
+            font_medium = pygame.font.Font(font_name, 17)
             font_small = pygame.font.Font(font_name, 14)
             font_title = pygame.font.Font(font_name, 34)
             break
@@ -43,62 +43,21 @@ async def main():
 
     # 총 10개의 핵심 헌법 조문 퀴즈 데이터베이스
     QUESTIONS = [
-        {
-            "desc": "모든 국민은 인간으로서의 존엄과 가치를 가지며, 행복을 추구할 권리를 가진다.",
-            "answer": "제10조",
-            "options": ["제10조", "제11조", "제12조"]
-        },
-        {
-            "desc": "모든 국민은 법 앞에 평등하다. 누구든지 성별·종교·사회적 신분에 의하여 차별을 받지 아니한다.",
-            "answer": "제11조",
-            "options": ["제11조", "제12조", "제31조"]
-        },
-        {
-            "desc": "모든 국민은 신체의 자유를 가진다. 법률에 의하지 아니하고는 체포·구속·압수·수색·심문을 받지 아니한다.",
-            "answer": "제12조",
-            "options": ["제10조", "제12조", "제37조"]
-        },
-        {
-            "desc": "모든 국민은 언론·출판의 자유와 집회·결사의 자유를 가진다.",
-            "answer": "제21조",
-            "options": ["제11조", "제21조", "제34조"]
-        },
-        {
-            "desc": "모든 국민은 헌법과 법률이 정한 법관에 의하여 법률에 의한 재판을 받을 권리를 가진다.",
-            "answer": "제27조",
-            "options": ["제21조", "제27조", "제37조"]
-        },
-        {
-            "desc": "모든 국민은 능력에 따라 균등하게 교육을 받을 권리를 가진다.",
-            "answer": "제31조",
-            "options": ["제11조", "제27조", "제31조"]
-        },
-        {
-            "desc": "모든 국민은 인간다운 생활을 할 권리를 가진다. 국가는 사회보장·사회복지의 증진에 노력할 의무를 진다.",
-            "answer": "제34조",
-            "options": ["제10조", "제31조", "제34조"]
-        },
-        {
-            "desc": "모든 국민은 근로의 권리를 가진다. 국가는 사회적·경제적 방법으로 근로자의 고용의 증진과 적정임금의 보장에 노력하여야 한다.",
-            "answer": "제32조",
-            "options": ["제32조", "제34조", "제37조"]
-        },
-        {
-            "desc": "국민의 모든 자유와 권리는 국가안전보장·질서유지 또는 공공복리를 위하여 필요한 경우에 한하여 법률로써 제한할 수 있다.",
-            "answer": "제37조",
-            "options": ["제21조", "제34조", "제37조"]
-        },
-        {
-            "desc": "모든 국민의 재산권은 보장된다. 그 내용과 한계는 법률로 정한다.",
-            "answer": "제23조",
-            "options": ["제21조", "제23조", "제31조"]
-        }
+        {"desc": "모든 국민은 인간으로서의 존엄과 가치를 가지며, 행복을 추구할 권리를 가진다.", "answer": "제10조", "options": ["제10조", "제11조", "제12조"]},
+        {"desc": "모든 국민은 법 앞에 평등하다. 누구든지 성별·종교·사회적 신분에 의하여 차별을 받지 아니한다.", "answer": "제11조", "options": ["제11조", "제12조", "제31조"]},
+        {"desc": "모든 국민은 신체의 자유를 가진다. 법률에 의하지 아니하고는 체포·구속·압수·수색·심문을 받지 아니한다.", "answer": "제12조", "options": ["제10조", "제12조", "제37조"]},
+        {"desc": "모든 국민은 언론·출판의 자유와 집회·결사의 자유를 가진다.", "answer": "제21조", "options": ["제11조", "제21조", "제34조"]},
+        {"desc": "모든 국민은 헌법과 법률이 정한 법관에 의하여 법률에 의한 재판을 받을 권리를 가진다.", "answer": "제27조", "options": ["제21조", "제27조", "제37조"]},
+        {"desc": "모든 국민은 능력에 따라 균등하게 교육을 받을 권리를 가진다.", "answer": "제31조", "options": ["제11조", "제27조", "제31조"]},
+        {"desc": "모든 국민은 인간다운 생활을 할 권리를 가진다. 국가는 사회보장·사회복지의 증진에 노력할 의무를 진다.", "answer": "제34조", "options": ["제10조", "제31조", "제34조"]},
+        {"desc": "모든 국민은 근로의 권리를 가진다. 국가는 고용의 증진과 적정임금의 보장에 노력하여야 한다.", "answer": "제32조", "options": ["제32조", "제34조", "제37조"]},
+        {"desc": "국민의 모든 자유와 권리는 국가안전보장·질서유지 또는 공공복리를 위하여 필요한 경우에 한하여 법률로써 제한할 수 있다.", "answer": "제37조", "options": ["제21조", "제34조", "제37조"]},
+        {"desc": "모든 국민의 재산권은 보장된다. 그 내용과 한계는 법률로 정한다.", "answer": "제23조", "options": ["제21조", "제23조", "제31조"]}
     ]
 
     class Particle:
         def __init__(self, x, y):
-            self.x = x
-            self.y = y
+            self.x, self.y = x, y
             self.vx = random.uniform(-5, 5)
             self.vy = random.uniform(-5, 5)
             self.color = random.choice([RED, GREEN, YELLOW, CYAN, PURPLE])
@@ -130,10 +89,9 @@ async def main():
 
     stars = [Star() for _ in range(60)]
 
-    # 게임 변수 설정 (우주선 상단 영역 고정)
     player_x = SCREEN_WIDTH // 2 - 25
-    player_y = 260  
-    player_speed = 6
+    player_y = 250  
+    player_speed = 7
     bullets = []
     enemies = []
     particles = []
@@ -145,31 +103,25 @@ async def main():
     clock = pygame.time.Clock()
     current_q = None
 
-    # [하단 UI 영역 배치] 좌측: 이동 버튼 / 중앙: 조문 설명 / 우측: 발사 버튼
-    rect_left = pygame.Rect(20, 430, 75, 140)
-    rect_right = pygame.Rect(100, 430, 75, 140)
-    desc_box_rect = pygame.Rect(185, 430, 415, 140)
-    rect_fire = pygame.Rect(615, 430, 165, 140)
+    # 터치 인식률을 극대화한 큼직한 하단 조작 버튼 영역 설정
+    rect_left = pygame.Rect(15, 420, 85, 160)
+    rect_right = pygame.Rect(105, 420, 85, 160)
+    desc_box_rect = pygame.Rect(200, 420, 395, 160)
+    rect_fire = pygame.Rect(610, 420, 175, 160)
 
     def load_question():
         nonlocal current_q, enemies, q_index
         if q_index >= len(QUESTIONS):
             return False
-        
         current_q = QUESTIONS[q_index]
         enemies = []
-        
         options = current_q["options"].copy()
         random.shuffle(options)
-        
         for i, opt in enumerate(options):
             ex = 150 + i * 220
             ey = -40
             enemies.append({
-                "text": opt,
-                "x": ex,
-                "y": ey,
-                "base_x": ex,
+                "text": opt, "x": ex, "y": ey, "base_x": ex,
                 "wobble_offset": random.uniform(0, 100),
                 "rect": pygame.Rect(ex, ey, 130, 50),
                 "is_correct": (opt == current_q["answer"])
@@ -215,17 +167,12 @@ async def main():
                     running = False
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if rect_fire.collidepoint(event.pos):
-                        # 싱글 레이저 (정중앙 1발 발사)
                         bullets.append(pygame.Rect(player_x + 23, player_y, 4, 16))
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE:
                         bullets.append(pygame.Rect(player_x + 23, player_y, 4, 16))
-                    elif event.key == pygame.K_LEFT:
-                        moving_left = True
-                    elif event.key == pygame.K_RIGHT:
-                        moving_right = True
 
-            # 하단 가상 버튼 터치/클릭 유지 처리 (좌우 이동)
+            # 터치/마우스 클릭 상태를 실시간 체크하여 버튼 반응 속도 향상
             if mouse_pressed[0]:
                 if rect_left.collidepoint(mouse_pos):
                     moving_left = True
@@ -246,7 +193,7 @@ async def main():
                 if bullet.y < 0:
                     bullets.remove(bullet)
 
-            # 느긋한 단어 낙하 속도 (0.7)
+            # 단어 낙하 속도 (느긋하게 0.7)
             for enemy in enemies:
                 enemy["y"] += 0.7  
                 enemy["wobble_offset"] += 0.05
@@ -254,14 +201,8 @@ async def main():
                 enemy["rect"].x = enemy["x"]
                 enemy["rect"].y = enemy["y"]
                 
-                # 하단 설명 상자(y=430)에 닿기 전에 처리
-                if enemy["y"] > 360:
-                    game_history.append({
-                        "desc": current_q["desc"],
-                        "answer": current_q["answer"],
-                        "user": "시간 초과",
-                        "correct": False
-                    })
+                if enemy["y"] > 350:
+                    game_history.append({"desc": current_q["desc"], "answer": current_q["answer"], "user": "시간 초과", "correct": False})
                     q_index += 1
                     lives -= 1
                     if lives <= 0 or not load_question():
@@ -283,10 +224,8 @@ async def main():
                             hit_result = "WRONG"
                         
                         game_history.append({
-                            "desc": current_q["desc"],
-                            "answer": current_q["answer"],
-                            "user": enemy["text"],
-                            "correct": (hit_result == "CORRECT")
+                            "desc": current_q["desc"], "answer": current_q["answer"],
+                            "user": enemy["text"], "correct": (hit_result == "CORRECT")
                         })
                         
                         if bullet in bullets:
@@ -305,11 +244,11 @@ async def main():
                 if p.life <= 0:
                     particles.remove(p)
 
-            # --- 화면 렌더링 (플레이 중) ---
+            # --- 화면 렌더링 ---
             info_text = font_medium.render(f"QUESTION: {q_index + 1}/10  |  SCORE: {score}  |  LIFE: {'❤️' * lives}", True, YELLOW)
             screen.blit(info_text, (30, 20))
 
-            # 중앙 하단 헌법 조문 설명 박스
+            # 헌법 조문 설명 박스 (하단 중앙 배치)
             pygame.draw.rect(screen, (25, 35, 60), desc_box_rect, border_radius=12)
             pygame.draw.rect(screen, CYAN, desc_box_rect, 2, border_radius=12)
             
@@ -317,18 +256,18 @@ async def main():
             words = desc_text.split(" ")
             line1, line2, line3 = "", "", ""
             for word in words:
-                if font_large.size(line1 + " " + word)[0] < 390:
+                if font_large.size(line1 + " " + word)[0] < 370:
                     line1 += (" " if line1 else "") + word
-                elif font_large.size(line2 + " " + word)[0] < 390:
+                elif font_large.size(line2 + " " + word)[0] < 370:
                     line2 += (" " if line2 else "") + word
                 else:
                     line3 += (" " if line3 else "") + word
 
-            screen.blit(font_large.render(line1, True, WHITE), (200, 442))
+            screen.blit(font_large.render(line1, True, WHITE), (212, 438))
             if line2:
-                screen.blit(font_large.render(line2, True, WHITE), (200, 475))
+                screen.blit(font_large.render(line2, True, WHITE), (212, 472))
             if line3:
-                screen.blit(font_large.render(line3, True, WHITE), (200, 508))
+                screen.blit(font_large.render(line3, True, WHITE), (212, 506))
 
             # 우주선 그리기
             pygame.draw.polygon(screen, CYAN, [(player_x + 25, player_y), (player_x + 5, player_y + 40), (player_x + 45, player_y + 40)])
@@ -352,20 +291,17 @@ async def main():
             for p in particles:
                 p.draw(screen)
 
-            # --- 하단 조작 버튼 UI 렌더링 ---
-            # 1. 왼쪽 이동 버튼 (◀)
+            # --- 터치 친화적 하단 조작 버튼 ---
             is_l_pressed = rect_left.collidepoint(mouse_pos) and mouse_pressed[0]
             pygame.draw.rect(screen, BTN_PRESS if is_l_pressed else BTN_BG, rect_left, border_radius=12)
             pygame.draw.rect(screen, WHITE, rect_left, 2, border_radius=12)
-            screen.blit(font_title.render("◀", True, WHITE), (rect_left.x + 18, rect_left.y + 45))
+            screen.blit(font_title.render("◀", True, WHITE), (rect_left.x + 24, rect_left.y + 55))
 
-            # 2. 오른쪽 이동 버튼 (▶)
             is_r_pressed = rect_right.collidepoint(mouse_pos) and mouse_pressed[0]
             pygame.draw.rect(screen, BTN_PRESS if is_r_pressed else BTN_BG, rect_right, border_radius=12)
             pygame.draw.rect(screen, WHITE, rect_right, 2, border_radius=12)
-            screen.blit(font_title.render("▶", True, WHITE), (rect_right.x + 18, rect_right.y + 45))
+            screen.blit(font_title.render("▶", True, WHITE), (rect_right.x + 24, rect_right.y + 55))
 
-            # 3. 우측 FIRE 버튼
             is_f_pressed = rect_fire.collidepoint(mouse_pos) and mouse_pressed[0]
             pygame.draw.rect(screen, (220, 60, 60) if is_f_pressed else (180, 50, 50), rect_fire, border_radius=15)
             pygame.draw.rect(screen, YELLOW, rect_fire, 3, border_radius=15)
@@ -374,7 +310,6 @@ async def main():
 
         elif game_state == "RESULT":
             screen.fill(NAVY)
-            
             title_txt = font_title.render(f"QUIZ RESULT - SCORE: {score}", True, YELLOW)
             screen.blit(title_txt, (SCREEN_WIDTH // 2 - title_txt.get_width() // 2, 25))
 
@@ -382,13 +317,9 @@ async def main():
             for idx, h in enumerate(game_history[:8]):
                 status_str = "O" if h["correct"] else "X"
                 status_color = GREEN if h["correct"] else RED
-                
                 res_line = f"[{idx+1}] 정답: {h['answer']} | 내 선택: {h['user']}"
-                t_surf = font_small.render(res_line, True, WHITE)
-                s_surf = font_small.render(status_str, True, status_color)
-                
-                screen.blit(t_surf, (50, y_offset))
-                screen.blit(s_surf, (720, y_offset))
+                screen.blit(font_small.render(res_line, True, WHITE), (50, y_offset))
+                screen.blit(font_small.render(status_str, True, status_color), (720, y_offset))
                 y_offset += 38
 
             sub_txt = font_medium.render("새로고침(F5)하면 다시 시작할 수 있습니다.", True, CYAN)
